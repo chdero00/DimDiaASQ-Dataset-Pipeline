@@ -1,33 +1,26 @@
-# DimDiaASQ-Dataset-Pipeline
-A two-stage data processing pipeline for constructing the Traditional Chinese DimDiaASQ (Dimensional Dialogue Aspect-based Sentiment Quadruple) dataset from YouTube comments.
+# Chinese-Dialogue-Scraper
 
-# DimDiaASQ Dataset Construction Pipeline
-
-## Project Title
-Constructing the Traditional Chinese DimDiaASQ (Dimensional Dialogue Aspect-based Sentiment Quadruple) Dataset and Prediction Model
+## Project Overview
+This repository contains a high-performance data processing pipeline designed to construct a large-scale **Traditional Chinese Dimensional Sentiment Dialogue Dataset**. The tool focuses on extracting complex multi-turn conversations from social media platforms to support advanced Natural Language Processing (NLP) tasks, specifically in the field of Aspect-Based Sentiment Analysis (ABSA).
 
 ## Research Objective
-This project aims to build a novel Chinese dialogue dataset by integrating the concepts of DiaASQ (Dialogue Aspect-based Sentiment Quadruple) and DimABSA (Dimensional Aspect-based Sentiment Analysis). The primary task is to predict the sentiment quadruple `(target, aspect, opinion, intensity)` from multi-turn dialogues. Unlike traditional polarity classification (positive/negative/neutral), `intensity` here consists of continuous numerical values representing `Valence` and `Arousal`. The final prediction target is formatted as: `(target, aspect, opinion, valence#arousal)`.
+The primary goal of this research is to develop a predictive model capable of identifying sentiment quadruples `(target, aspect, opinion, intensity)` within multi-turn dialogues. Unlike traditional categorical sentiment analysis, this project utilizes **Dimensional Emotion Models** (Valence and Arousal) to provide a more granular understanding of user emotions in a conversational context.
 
-## Current Research Setup
-1.  **Data Source:** YouTube comment sections (fetched via YouTube API v3).
-2.  **Domains:** Laptops, Mobile Phones, Hotels, and Restaurants (currently prioritizing Traditional Chinese review/unboxing videos).
-3.  **Valence & Arousal Calculation:** The supervising professor has provided an automated tool for calculating Valence and Arousal values. Therefore, manual annotation of VA values is not required. The research focuses on accurately extracting Targets (entities), Aspects, and Opinions from dialogues, which are then processed by the professor's tool to generate VA labels.
+## Technical Architecture: Two-Stage Pipeline
+The system implements a rigorous "two-stage" pipeline to transform flat, noisy comment data into structured, high-quality dialogue trees.
 
-## Current Engineering Progress: Dataset Construction Pipeline
-A complete "two-stage" data preprocessing pipeline has been implemented in Python, successfully converting flat YouTube comments into multi-turn Dialogue Trees that meet strict DiaASQ standards.
+### Stage 1: Systematic Data Acquisition
+* **Methodology:** Automated extraction of comment threads from curated domain-specific video playlists via the YouTube Data API v3.
+* **Heuristic Filtering:** To ensure conversational depth, the system only retains threads with a `totalReplyCount >= 4`, ensuring each sample contains at least 5 distinct utterances.
+* **Metadata Management:** Each dialogue is automatically tagged with domain labels (e.g., Electronics, Hospitality) to facilitate cross-domain model evaluation.
 
-### Stage 1: Loose Scraping
-* **Method:** Automatically fetching comments from videos in specific domain playlists via the YouTube API.
-* **Filtering:** Retaining only comment threads with `totalReplyCount >= 4` (meaning the entire thread has at least 5 utterances).
-* **Output:** Flattened JSON data preserving the original `text` and `@username`, with `reply_to` defaulting to the top-level comment (`utt_id: 0`). A `domain` label is automatically added for cross-domain evaluation.
+### Stage 2: Topology Reconstruction & Linguistic Denoising
+* **Dialogue Tree Building:** Implements a dynamic string-matching algorithm to resolve `@username` mentions, recursively mapping reply-to relationships to reconstruct the $n \rightarrow m$ dialogue topology.
+* **Advanced Text Cleaning:**
+    * **PLM Optimization:** Precision removal of social mentions to prevent attention-mechanism interference in Pre-trained Language Models.
+    * **Feature Preservation:** Retains Emojis and punctuation, which serve as critical features for Valence and Arousal estimation.
+    * **Span Alignment:** Uses regular expressions to normalize whitespace and line breaks, preventing character-index misalignment during the annotation of Target-Aspect-Opinion spans.
+* **Structural Validation:** Utilizes **Depth-First Search (DFS)** algorithms to enforce strict topology standards (Nodes: 5-12, Depth: 3-5, Leaf Nodes $\ge$ 2), discarding low-quality or linear conversations.
 
-### Stage 2: Dialogue Topology Reconstruction & Denoising
-* **Entity Alignment & Reply Relationship Reconstruction:** Utilizing dynamic string matching algorithms to scan for `@username` within the `text`, recursively searching backward for previous speakers to correctly map the `reply_to` of child comments to their corresponding `utt_id`. This successfully reconstructs the $n \rightarrow m$ dialogue tree structure (Utterance-to-Utterance).
-* **Text Denoising & Span Alignment Safeguards:**
-    * Precisely removing `@username` to prevent interference with the attention mechanisms of future Pre-trained Language Models (PLMs).
-    * Retaining Emojis, as they contain strong Valence and Arousal features.
-    * Handling newline characters: Using regular expressions to replace all continuous `\r` and `\n` with a single full-width comma `，`, and compressing redundant spaces. This completely resolves potential character misalignment issues when annotating T-A-O span indices (Start/End Index) in the future.
-* **Topology Filtering (Aligning with DiaASQ standards):**
-    * Using DFS (Depth-First Search) algorithms to calculate dialogue tree depth and leaf node count.
-    * Strict filtering criteria: Total nodes limited to `5 ~ 12`, maximum tree depth of `3 ~ 5` levels, and branches (leaf nodes) $\ge$ `2`. Low-quality or one-way dialogues that do not meet these conditions are discarded.
+## Requirements & Usage
+This pipeline is built with Python and utilizes the `google-api-python-client`. It is designed for academic researchers requiring structured conversational data for sentiment and emotion-related NLP tasks.
